@@ -1,11 +1,18 @@
 import torch
 from torch.utils.data import Dataset
-from torchvision.datasets import MNIST, FashionMNIST, CIFAR10
-from torchvision import transforms
+# from torchvision.datasets import MNIST, FashionMNIST, CIFAR10
+# from torchvision import transforms
 
+import glob
+import random
+import os
+
+from PIL import Image
+import torchvision.transforms as transforms
 
 class DiffSet(Dataset):
     def __init__(self, train, dataset="MNIST"):
+
         transform = transforms.Compose([transforms.ToTensor()])
 
         datasets = {
@@ -17,6 +24,10 @@ class DiffSet(Dataset):
         train_dataset = datasets[dataset](
             "./data", download=True, train=train, transform=transform
         )
+        # train_dataset = datasets[dataset](
+        #     "./data", download=True, train=train
+        # )
+        
 
         self.dataset_len = len(train_dataset.data)
 
@@ -38,3 +49,25 @@ class DiffSet(Dataset):
 
     def __getitem__(self, item):
         return self.input_seq[item]
+
+
+
+class ImageDataset(Dataset):
+    def __init__(self, root, transforms_=None, mode='train'):
+        
+        self.transform = transforms.Compose(transforms_)
+        self.depth = 3
+        self.size = 256
+
+
+        # self.files_A = sorted(glob.glob(os.path.join(root, '%s/A' % mode) + '/*.*'))
+        # self.files_B = sorted(glob.glob(os.path.join(root, '%s/B' % mode) + '/*.*'))
+        self.files = sorted(glob.glob(os.path.join(root, '%s' % mode) + '/*.*'))
+
+    def __getitem__(self, index):
+        item_A = self.transform(Image.open(self.files[index % len(self.files)]))
+
+        return item_A
+
+    def __len__(self):
+        return len(self.files)
