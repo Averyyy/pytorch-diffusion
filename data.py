@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import Dataset
-# from torchvision.datasets import MNIST, FashionMNIST, CIFAR10
+from torchvision.datasets import MNIST, FashionMNIST, CIFAR10
 # from torchvision import transforms
 
 import glob
@@ -9,6 +9,7 @@ import os
 
 from PIL import Image
 import torchvision.transforms as transforms
+
 
 class DiffSet(Dataset):
     def __init__(self, train, dataset="MNIST"):
@@ -27,7 +28,6 @@ class DiffSet(Dataset):
         # train_dataset = datasets[dataset](
         #     "./data", download=True, train=train
         # )
-        
 
         self.dataset_len = len(train_dataset.data)
 
@@ -42,6 +42,7 @@ class DiffSet(Dataset):
             self.depth = 3
             self.size = 32
         self.input_seq = ((data / 255.0) * 2.0) - 1.0
+        print("input_seq:", self.input_seq.shape)
         self.input_seq = self.input_seq.moveaxis(3, 1)
 
     def __len__(self):
@@ -51,23 +52,28 @@ class DiffSet(Dataset):
         return self.input_seq[item]
 
 
-
 class ImageDataset(Dataset):
     def __init__(self, root, transforms_=None, mode='train'):
-        
+
         self.transform = transforms.Compose(transforms_)
         self.depth = 3
         self.size = 256
 
-
-        # self.files_A = sorted(glob.glob(os.path.join(root, '%s/A' % mode) + '/*.*'))
-        # self.files_B = sorted(glob.glob(os.path.join(root, '%s/B' % mode) + '/*.*'))
-        self.files = sorted(glob.glob(os.path.join(root, '%s' % mode) + '/*.*'))
+        self.files = sorted(
+            glob.glob(os.path.join(root, '%s' % mode) + '/*.*'))
+        # self.input_seq = torch.Tensor(self.transform(
+        #     Image.open(self.files[0]))).unsqueeze(0)
+        # for i in range(1, len(self.files)):
+        #     # print(i)
+        #     self.input_seq = torch.cat((self.input_seq, torch.Tensor(
+        #         self.transform(Image.open(self.files[i]))).unsqueeze(0)), dim=0)
+        # self.input_seq = self.input_seq.moveaxis(1, 3)
 
     def __getitem__(self, index):
-        item_A = self.transform(Image.open(self.files[index % len(self.files)]))
 
-        return item_A
+        img = self.transform(Image.open(self.files[index % len(self.files)]))
+        print("img shape: ", img.shape)
+        return img
 
     def __len__(self):
         return len(self.files)

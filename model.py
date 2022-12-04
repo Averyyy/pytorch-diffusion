@@ -11,7 +11,9 @@ class DiffusionModel(pl.LightningModule):
         self.beta_small = 1e-4
         self.beta_large = 0.02
         self.t_range = t_range
-        self.in_size = in_size
+        self.in_size = in_size**2
+        self.img_depth = img_depth
+        self.input_size = in_size
 
         bilinear = True
         self.inc = DoubleConv(img_depth, 64)
@@ -23,11 +25,12 @@ class DiffusionModel(pl.LightningModule):
         self.up2 = Up(256, 128 // factor, bilinear)
         self.up3 = Up(128, 64, bilinear)
         self.outc = OutConv(64, img_depth)
-        self.sa1 = SAWrapper(256, 8)
-        self.sa2 = SAWrapper(256, 4)
-        self.sa3 = SAWrapper(128, 8)
+        self.sa1 = SAWrapper(256, self.input_size // 4)
+        self.sa2 = SAWrapper(256, self.input_size // 8)
+        self.sa3 = SAWrapper(128, self.input_size // 4)
 
     def pos_encoding(self, t, channels, embed_size):
+
         inv_freq = 1.0 / (
             10000
             ** (torch.arange(0, channels, 2, device=self.device).float() / channels)
@@ -41,16 +44,26 @@ class DiffusionModel(pl.LightningModule):
         """
         Model is U-Net with added positional encodings and self-attention layers.
         """
+
         x1 = self.inc(x)
-        x2 = self.down1(x1) + self.pos_encoding(t, 128, 16)
-        x3 = self.down2(x2) + self.pos_encoding(t, 256, 8)
+        print("x1", x1.shape)
+        print("x2", self.down1(x1).shape, self.pos_encoding(
+            t, 128, self.input_size//2).shape)
+        x2 = self.down1(x1) + self.pos_encoding(t, 128, self.input_size // 2)
+        print("x3", self.down2(x2).shape, self.pos_encoding(
+            t, 256, self.input_size//4).shape)
+        x3 = self.down2(x2) + self.pos_encoding(t, 256, self.input_size // 4)
+        print("pre sa", x3.shape)
         x3 = self.sa1(x3)
-        x4 = self.down3(x3) + self.pos_encoding(t, 256, 4)
+        print("post sa", x3.shape)
+        print("x4:", self.down3(x3).shape, self.pos_encoding(
+            t, 512, self.input_size // 8).shape)
+        x4 = self.down3(x3) + self.pos_encoding(t, 256, self.input_size // 8)
         x4 = self.sa2(x4)
-        x = self.up1(x4, x3) + self.pos_encoding(t, 128, 8)
+        x = self.up1(x4, x3) + self.pos_encoding(t, 128, self.input_size // 4)
         x = self.sa3(x)
-        x = self.up2(x, x2) + self.pos_encoding(t, 64, 16)
-        x = self.up3(x, x1) + self.pos_encoding(t, 64, 32)
+        x = self.up2(x, x2) + self.pos_encoding(t, 64, self.input_size // 2)
+        x = self.up3(x, x1) + self.pos_encoding(t, 64, self.input_size)
         output = self.outc(x)
         return output
 
@@ -69,13 +82,15 @@ class DiffusionModel(pl.LightningModule):
         """
         Corresponds to Algorithm 1 from (Ho et al., 2020).
         """
-        ts = torch.randint(0, self.t_range, [batch.shape[0]], device=self.device)
+        ts = torch.randint(0, self.t_range, [
+                           batch.shape[0]], device=self.device)
         noise_imgs = []
         epsilons = torch.randn(batch.shape, device=self.device)
         for i in range(len(ts)):
             a_hat = self.alpha_bar(ts[i])
             noise_imgs.append(
-                (math.sqrt(a_hat) * batch[i]) + (math.sqrt(1 - a_hat) * epsilons[i])
+                (math.sqrt(a_hat) * batch[i]) +
+                (math.sqrt(1 - a_hat) * epsilons[i])
             )
         noise_imgs = torch.stack(noise_imgs, dim=0)
         e_hat = self.forward(noise_imgs, ts.unsqueeze(-1).type(torch.float))
