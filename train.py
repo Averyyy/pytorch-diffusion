@@ -7,6 +7,7 @@ import imageio
 import glob
 import torchvision.transforms as transforms
 
+
 # Training hyperparameters
 diffusion_steps = 100
 dataset_choice = "Fashion"
@@ -30,7 +31,6 @@ if load_model:
     last_checkpoint = glob.glob(
         f"./lightning_logs/{dataset_choice}/version_{load_version_num}/checkpoints/*.ckpt"
     )[-1]
-
 
 # Create datasets and data loaders
 # train_dataset = DiffSet(True, dataset_choice)
@@ -57,7 +57,6 @@ else:
     print(train_dataset.size)
     model = DiffusionModel(
         train_dataset.size, diffusion_steps, train_dataset.depth)
-
 
 # Load Trainer model
 tb_logger = pl.loggers.TensorBoardLogger(
