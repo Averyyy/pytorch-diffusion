@@ -72,7 +72,7 @@ class ImageDataset(Dataset):
     def __getitem__(self, index):
 
         img = self.transform(Image.open(self.files[index % len(self.files)]))
-        print("img shape: ", img.shape)
+        # print("img shape: ", img.shape)
         return img
 
     def __len__(self):

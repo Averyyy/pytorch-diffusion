@@ -46,18 +46,18 @@ class DiffusionModel(pl.LightningModule):
         """
 
         x1 = self.inc(x)
-        print("x1", x1.shape)
-        print("x2", self.down1(x1).shape, self.pos_encoding(
-            t, 128, self.input_size//2).shape)
+        # print("x1", x1.shape)
+        # print("x2", self.down1(x1).shape, self.pos_encoding(
+        #     t, 128, self.input_size//2).shape)
         x2 = self.down1(x1) + self.pos_encoding(t, 128, self.input_size // 2)
-        print("x3", self.down2(x2).shape, self.pos_encoding(
-            t, 256, self.input_size//4).shape)
+        # print("x3", self.down2(x2).shape, self.pos_encoding(
+        #     t, 256, self.input_size//4).shape)
         x3 = self.down2(x2) + self.pos_encoding(t, 256, self.input_size // 4)
-        print("pre sa", x3.shape)
+        # print("pre sa", x3.shape)
         x3 = self.sa1(x3)
-        print("post sa", x3.shape)
-        print("x4:", self.down3(x3).shape, self.pos_encoding(
-            t, 512, self.input_size // 8).shape)
+        # print("post sa", x3.shape)
+        # print("x4:", self.down3(x3).shape, self.pos_encoding(
+            # t, 512, self.input_size // 8).shape)
         x4 = self.down3(x3) + self.pos_encoding(t, 256, self.input_size // 8)
         x4 = self.sa2(x4)
         x = self.up1(x4, x3) + self.pos_encoding(t, 128, self.input_size // 4)

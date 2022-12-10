@@ -9,10 +9,10 @@ import torchvision.transforms as transforms
 
 
 # Training hyperparameters
-diffusion_steps = 100
-dataset_choice = "Fashion"
-max_epoch = 5
-batch_size = 1
+diffusion_steps = 1000
+dataset_choice = "real"
+max_epoch = 20
+batch_size = 32
 
 # Loading parameters
 load_model = False
